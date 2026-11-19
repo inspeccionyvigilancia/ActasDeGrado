@@ -39,24 +39,22 @@ const UI = {
 };
 
 async function apiCall(data) {
-    const response = await fetch(CONFIG.API_URL, {
-        method: 'POST',
-        body: JSON.stringify(data)
-    });
-    return response.json();
-}
-
-function logout() {
-    localStorage.clear();
-    window.location.href = 'index.html';
-}
-
-function filterTable(inputId, tableId) {
-    const input = document.getElementById(inputId).value.toUpperCase();
-    const table = document.getElementById(tableId);
-    const tr = table.getElementsByTagName("tr");
-    for (let i = 1; i < tr.length; i++) {
-        let textContent = tr[i].textContent || tr[i].innerText;
-        tr[i].style.display = textContent.toUpperCase().indexOf(input) > -1 ? "" : "none";
+    try {
+        const response = await fetch(CONFIG.API_URL, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        
+        // Atrapa respuestas que no sean JSON (Ej: Errores 500 de Google)
+        const text = await response.text(); 
+        try {
+            return JSON.parse(text);
+        } catch (parseError) {
+            console.error("Error del servidor:", text);
+            return { success: false, message: "Error interno en Google Apps Script. Revisa los permisos." };
+        }
+    } catch (networkError) {
+        console.error("Error de conexión:", networkError);
+        return { success: false, message: "Error de conexión. ¿La URL de Apps Script es correcta?" };
     }
 }
