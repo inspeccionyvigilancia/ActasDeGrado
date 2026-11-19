@@ -3,9 +3,9 @@ const CONFIG = {
     // REEMPLAZA ESTA URL con la de tu despliegue de Apps Script
     API_URL: "https://script.google.com/macros/s/AKfycbwl5kV4sFTFMMGn1vvHA3G1MbDYj3H9X83zFlPYJ0CERZIzi7UHw8pt-BzE1CVrm-S6vg/exec", 
     COLORS: {
-        primary: "#094062", // Azul oscuro
-        secondary: "#05b700", // Verde
-        accent: "#f9c900" // Amarillo
+        primary: "#094062", 
+        secondary: "#05b700", 
+        accent: "#f9c900" 
     }
 };
 
@@ -17,7 +17,7 @@ const UI = {
                 <h1 style="margin: 0; font-size: 24px;">SECRETARÍA DE EDUCACIÓN DE CALDAS</h1>
                 <h2 style="margin: 0; font-size: 18px; color: ${CONFIG.COLORS.accent};">GESTIÓN DE ACTAS DE GRADO</h2>
             </div>
-            ${localStorage.getItem('userRole') ? `<button onclick="logout()" style="float: right; margin-top: 20px; background: ${CONFIG.COLORS.secondary}; color: white; border: none; padding: 10px 20px; cursor: pointer;">Cerrar Sesión</button>` : ''}
+            ${localStorage.getItem('role') ? `<button onclick="logout()" style="float: right; margin-top: 20px; background: ${CONFIG.COLORS.secondary}; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; font-weight:bold;">Cerrar Sesión</button>` : ''}
         </header>
     `,
     getStyles: () => `
