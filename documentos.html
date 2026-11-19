@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Documentos PDF - Gestión de Actas</title>
+    <script src="config.js"></script>
+</head>
+<body>
+    <div id="header-container"></div>
+    <div class="container">
+        <div class="card" style="text-align: center;">
+            <h2 style="color: #094062;">Subir Actas (Formato PDF)</h2>
+            <button onclick="window.history.back()" style="margin-bottom: 20px;">⬅ Volver al Panel</button>
+            <br>
+            
+            <div style="border: 2px dashed #05b700; padding: 40px; border-radius: 8px; background: #fafafa;">
+                <input type="file" id="pdfFile" accept="application/pdf" style="display: none;">
+                <button onclick="document.getElementById('pdfFile').click()" class="btn-green" style="font-size: 18px; padding: 15px 30px;">
+                    📂 Seleccionar Archivo PDF
+                </button>
+                <p id="fileName" style="margin-top: 15px; font-weight: bold;"></p>
+                <button id="uploadBtn" style="display: none; margin: auto;" onclick="uploadFile()">Subir a Drive</button>
+            </div>
+            
+            <p id="uploadStatus" style="margin-top: 20px; font-weight: bold;"></p>
+        </div>
+    </div>
+
+    <script>
+        if(!localStorage.getItem('user')) window.location.href = 'index.html';
+        document.head.insertAdjacentHTML('beforeend', UI.getStyles());
+        document.getElementById('header-container').innerHTML = UI.getHeader();
+
+        document.getElementById('pdfFile').addEventListener('change', function(e) {
+            if(e.target.files.length > 0) {
+                document.getElementById('fileName').innerText = "Archivo seleccionado: " + e.target.files[0].name;
+                document.getElementById('uploadBtn').style.display = 'block';
+            }
+        });
+
+        function uploadFile() {
+            const file = document.getElementById('pdfFile').files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            document.getElementById('uploadStatus').innerText = "Subiendo... Por favor espera.";
+            document.getElementById('uploadStatus').style.color = "#094062";
+            document.getElementById('uploadBtn').disabled = true;
+
+            reader.onload = function(e) {
+                const base64Data = e.target.result.split(',')[1];
+                
+                // Llamada nativa a fetch para usar POST con URL Encoded (mejor para archivos en GAS)
+                fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        action: 'uploadFile',
+                        data: base64Data,
+                        filename: file.name,
+                        mimeType: file.type
+                    })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if(result.success) {
+                        document.getElementById('uploadStatus').innerText = "✅ Archivo subido exitosamente.";
+                        document.getElementById('uploadStatus').style.color = "#05b700";
+                    } else {
+                        document.getElementById('uploadStatus').innerText = "❌ Error al subir.";
+                        document.getElementById('uploadStatus').style.color = "red";
+                    }
+                    document.getElementById('uploadBtn').disabled = false;
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>
