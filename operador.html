@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Operador - Gestión de Actas</title>
+    <script src="config.js"></script>
+</head>
+<body>
+    <div id="header-container"></div>
+    <div class="container">
+        <div class="card">
+            <h2>Panel de Operador <span style="color:#05b700; font-size:16px;">(CODDANE: <span id="userBadge"></span>)</span></h2>
+            <nav style="margin-bottom: 20px;">
+                <button onclick="loadSheet('Actas', 1)">Mis Actas</button>
+                <button onclick="loadSheet('Graduados', 1)">Mis Graduados</button>
+                <button class="btn-green" onclick="window.location.href='documentos.html'">Subir PDFs</button>
+            </nav>
+
+            <input type="text" id="searchInputOp" class="search-bar" placeholder="🔍 Buscar estudiante, documento o resolución..." onkeyup="filterTable('searchInputOp', 'dataTableOp')">
+            
+            <div id="formContainerOp" style="margin-bottom: 20px; display:none;">
+                <h4 style="color: #094062;">Agregar Nuevo Registro</h4>
+                <div id="dynamicInputsOp"></div>
+                <button onclick="saveRecordOp()" class="btn-green">Guardar</button>
+            </div>
+
+            <h3 id="currentSheetTitleOp" style="color: #094062;"></h3>
+            <div style="overflow-x: auto;">
+                <table id="dataTableOp">
+                    <thead id="dataHeadOp"></thead>
+                    <tbody id="dataBodyOp"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const userCoddane = localStorage.getItem('user');
+        if(!userCoddane || localStorage.getItem('role') !== 'OPERADOR') window.location.href = 'index.html';
+        
+        document.head.insertAdjacentHTML('beforeend', UI.getStyles());
+        document.getElementById('header-container').innerHTML = UI.getHeader();
+        document.getElementById('userBadge').innerText = userCoddane;
+
+        let currentSheet = '';
+        let currentHeaders = [];
+
+        async function loadSheet(sheetName, coddaneIndex) {
+            currentSheet = sheetName;
+            document.getElementById('currentSheetTitleOp').innerText = "Cargando " + sheetName + "...";
+            
+            // Llama a la API filtrando por la columna CODDANE (Índice 1 en ambas tablas)
+            const res = await apiCall({ action: 'getData', sheet: sheetName, filterCol: coddaneIndex, filterVal: userCoddane });
+            
+            if(res.success) {
+                currentHeaders = res.headers;
+                document.getElementById('currentSheetTitleOp').innerText = "Tabla: " + sheetName;
+                
+                document.getElementById('formContainerOp').style.display = 'block';
+                document.getElementById('dynamicInputsOp').innerHTML = currentHeaders.map((h, i) => {
+                    // Forzar que el campo CODDANE esté pre-llenado y bloqueado
+                    let isCoddane = (i === coddaneIndex) ? `value="${userCoddane}" readonly style="background:#eee; width: 22%; margin-right: 1%;"` : `placeholder="${h}" style="width: 22%; margin-right: 1%;"`;
+                    return `<input type="text" id="inputOp_${i}" ${isCoddane}>`
+                }).join('');
+
+                document.getElementById('dataHeadOp').innerHTML = `<tr>${currentHeaders.map(h => `<th>${h}</th>`).join('')}</tr>`;
+                document.getElementById('dataBodyOp').innerHTML = res.data.map(row => 
+                    `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`
+                ).join('');
+            }
+        }
+
+        async function saveRecordOp() {
+            const rowData = currentHeaders.map((_, i) => document.getElementById(`inputOp_${i}`).value);
+            await apiCall({ action: 'insert', sheet: currentSheet, row: rowData });
+            loadSheet(currentSheet, 1);
+        }
+    </script>
+</body>
+</html>
