@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Gestión de Actas</title>
+    <script src="config.js"></script>
+</head>
+<body>
+    <div id="header-container"></div>
+    <div class="container">
+        <div class="card">
+            <h2>Panel de Administrador (Acceso Total)</h2>
+            <nav style="margin-bottom: 20px;">
+                <button onclick="loadSheet('Usuarios')">Usuarios</button>
+                <button onclick="loadSheet('Actas')">Actas</button>
+                <button onclick="loadSheet('Municipio')">Municipios</button>
+                <button onclick="loadSheet('Institucion')">Instituciones</button>
+                <button onclick="loadSheet('Graduados')">Graduados</button>
+                <button class="btn-green" onclick="window.location.href='documentos.html'">Gestor PDF</button>
+            </nav>
+
+            <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Buscar en la tabla actual (Mote de búsqueda)..." onkeyup="filterTable('searchInput', 'dataTable')">
+            
+            <div id="formContainer" style="margin-bottom: 20px; display:none;">
+                <h4 style="color: #094062;">Agregar Nuevo Registro</h4>
+                <div id="dynamicInputs"></div>
+                <button onclick="saveRecord()" class="btn-green">Guardar</button>
+            </div>
+
+            <h3 id="currentSheetTitle" style="color: #05b700;"></h3>
+            <div style="overflow-x: auto;">
+                <table id="dataTable">
+                    <thead id="dataHead"></thead>
+                    <tbody id="dataBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if(localStorage.getItem('role') !== 'ADMINISTRADOR') window.location.href = 'index.html';
+        document.head.insertAdjacentHTML('beforeend', UI.getStyles());
+        document.getElementById('header-container').innerHTML = UI.getHeader();
+
+        let currentSheet = '';
+        let currentHeaders = [];
+
+        async function loadSheet(sheetName) {
+            currentSheet = sheetName;
+            document.getElementById('currentSheetTitle').innerText = "Cargando " + sheetName + "...";
+            const res = await apiCall({ action: 'getData', sheet: sheetName });
+            
+            if(res.success) {
+                currentHeaders = res.headers;
+                document.getElementById('currentSheetTitle').innerText = "Tabla: " + sheetName;
+                
+                // Generar Inputs
+                document.getElementById('formContainer').style.display = 'block';
+                document.getElementById('dynamicInputs').innerHTML = currentHeaders.map((h, i) => 
+                    `<input type="text" id="input_${i}" placeholder="${h}" style="width: 22%; margin-right: 1%;">`
+                ).join('');
+
+                // Generar Tabla
+                document.getElementById('dataHead').innerHTML = `<tr>${currentHeaders.map(h => `<th>${h}</th>`).join('')}<th>Acciones</th></tr>`;
+                document.getElementById('dataBody').innerHTML = res.data.map((row, index) => 
+                    `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}
+                     <td><button class="btn-danger" onclick="deleteRecord(${index})">Eliminar</button></td></tr>`
+                ).join('');
+            }
+        }
+
+        async function saveRecord() {
+            const rowData = currentHeaders.map((_, i) => document.getElementById(`input_${i}`).value);
+            await apiCall({ action: 'insert', sheet: currentSheet, row: rowData });
+            loadSheet(currentSheet); // Recargar
+        }
+
+        async function deleteRecord(index) {
+            if(confirm("¿Eliminar este registro?")) {
+                await apiCall({ action: 'delete', sheet: currentSheet, rowIndex: index });
+                loadSheet(currentSheet);
+            }
+        }
+    </script>
+</body>
+</html>
