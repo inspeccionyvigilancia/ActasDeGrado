@@ -14,7 +14,7 @@ const UI = {
         <header style="background-color: ${CONFIG.COLORS.primary}; color: white; padding: 20px; text-align: center; border-bottom: 5px solid ${CONFIG.COLORS.accent};">
             <img src="logo.png" alt="Logo" style="height: 80px; vertical-align: middle; margin-right: 15px;">
             <div style="display: inline-block; vertical-align: middle; text-align: left;">
-                <h1 style="margin: 0; font-size: 24px;">SECRETARÍA DE EDUCACIÓN DE CALDAS</h1>
+                
                 <h2 style="margin: 0; font-size: 18px; color: ${CONFIG.COLORS.accent};">GESTIÓN DE ACTAS DE GRADO</h2>
             </div>
             ${localStorage.getItem('role') ? `<button onclick="logout()" style="float: right; margin-top: 20px; background: ${CONFIG.COLORS.secondary}; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; font-weight:bold;">Cerrar Sesión</button>` : ''}
