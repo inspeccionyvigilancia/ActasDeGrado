@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Actas de Grado</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="login-container">
+        <img src="logo.png" alt="Logo Institucional" class="logo">
+        <h2>Ingreso al Sistema</h2>
+        <input type="text" id="username" placeholder="Usuario" required>
+        <input type="password" id="password" placeholder="Contraseña" required>
+        <button onclick="login()">Ingresar</button>
+        <p id="login-msg"></p>
+    </div>
+
+    <div id="dashboard-container" style="display: none;">
+        <header>
+            <img src="logo.png" alt="Logo Institucional" class="logo-small">
+            <h1>Registro Actas de Grado</h1>
+            <div>
+                <span id="user-info"></span>
+                <button onclick="logout()" class="btn-logout">Salir</button>
+            </div>
+        </header>
+
+        <nav>
+            <button onclick="showTab('Graduados')">Graduados</button>
+            <button onclick="showTab('Actas')">Actas</button>
+            <button onclick="showTab('Subir')">Subir PDF</button>
+        </nav>
+
+        <main id="main-content">
+            <!-- El contenido se cargará aquí dinámicamente -->
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
