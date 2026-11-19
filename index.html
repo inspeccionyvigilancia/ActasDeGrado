@@ -7,33 +7,85 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+    <!-- Panel de Login -->
     <div id="login-container">
         <img src="logo.png" alt="Logo Institucional" class="logo">
-        <h2>Ingreso al Sistema</h2>
-        <input type="text" id="username" placeholder="Usuario" required>
-        <input type="password" id="password" placeholder="Contraseña" required>
-        <button onclick="login()">Ingresar</button>
-        <p id="login-msg"></p>
+        <h2>Ingreso a la Plataforma</h2>
+        <form id="login-form">
+            <input type="text" id="username" placeholder="Nombre de Usuario (ej. 17001 o ADMIN)" required>
+            <input type="password" id="password" placeholder="Contraseña" required>
+            <button type="submit">Ingresar</button>
+            <div id="login-msg" class="msg"></div>
+        </form>
     </div>
 
-    <div id="dashboard-container" style="display: none;">
+    <!-- Panel Principal (Dashboard) -->
+    <div id="dashboard" class="hidden">
         <header>
-            <img src="logo.png" alt="Logo Institucional" class="logo-small">
-            <h1>Registro Actas de Grado</h1>
-            <div>
+            <div class="header-left">
+                <img src="logo.png" alt="Logo Institucional" class="logo-small">
+                <h1>Registro de Actas de Grado</h1>
+            </div>
+            <div class="header-right">
                 <span id="user-info"></span>
-                <button onclick="logout()" class="btn-logout">Salir</button>
+                <button id="btn-logout">Cerrar Sesión</button>
             </div>
         </header>
 
         <nav>
-            <button onclick="showTab('Graduados')">Graduados</button>
-            <button onclick="showTab('Actas')">Actas</button>
-            <button onclick="showTab('Subir')">Subir PDF</button>
+            <button class="tab-btn active" data-target="panel-graduados">Graduados</button>
+            <button class="tab-btn" data-target="panel-actas">Actas y PDFs</button>
         </nav>
 
-        <main id="main-content">
-            <!-- El contenido se cargará aquí dinámicamente -->
+        <main>
+            <!-- Panel Graduados -->
+            <section id="panel-graduados" class="panel active">
+                <h2>Gestión de Graduados</h2>
+                <div class="form-container">
+                    <h3>Agregar Graduado</h3>
+                    <form id="form-graduados">
+                        <input type="text" id="g-municipio" placeholder="Municipio" required>
+                        <input type="text" id="g-coddane" placeholder="CODDANE" required>
+                        <input type="text" id="g-institucion" placeholder="Institución" required>
+                        <input type="text" id="g-estudiante" placeholder="Nombre Estudiante" required>
+                        <input type="text" id="g-tipodoc" placeholder="Tipo Documento" required>
+                        <input type="text" id="g-numdoc" placeholder="Número Documento" required>
+                        <input type="text" id="g-resolucion" placeholder="Resolución">
+                        <input type="date" id="g-fecha" required>
+                        <button type="submit">Guardar Graduado</button>
+                    </form>
+                </div>
+                <h3>Lista de Graduados</h3>
+                <div class="table-responsive">
+                    <table id="table-graduados">
+                        <thead><tr><th>Municipio</th><th>CODDANE</th><th>Institución</th><th>Estudiante</th><th>Documento</th><th>Resolución</th><th>Fecha</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Panel Actas y Subida de Archivos -->
+            <section id="panel-actas" class="panel hidden">
+                <h2>Gestión de Actas y Archivos PDF</h2>
+                <div class="form-container">
+                    <h3>Subir Nueva Acta (PDF)</h3>
+                    <form id="form-upload">
+                        <input type="text" id="a-numacta" placeholder="Número de Acta" required>
+                        <input type="text" id="a-coddane" placeholder="CODDANE" required>
+                        <input type="file" id="a-file" accept="application/pdf" required>
+                        <button type="submit">Subir y Registrar Acta</button>
+                        <div id="upload-msg" class="msg"></div>
+                    </form>
+                </div>
+                <h3>Lista de Actas</h3>
+                <div class="table-responsive">
+                    <table id="table-actas">
+                        <thead><tr><th>Número Acta</th><th>CODDANE</th><th>PDF</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
         </main>
     </div>
 
