@@ -1,5 +1,5 @@
 // REEMPLAZA ESTA URL POR LA DE TU GOOGLE APPS SCRIPT
-const API_URL = 'URL_DE_TU_WEB_APP_DE_APPS_SCRIPT'; 
+const API_URL = 'https://script.google.com/macros/s/AKfycbxrTRT6KGrG5NsuEqMIt47ju2DGpkI_U8hd4-7nkyLnZ_TJXJVg26n6ou312i4wuS2xZA/exec'; 
 
 let currentUser = null;
 
