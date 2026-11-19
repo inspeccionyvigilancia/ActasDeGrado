@@ -1,94 +1,537 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Actas de Grado</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Gestión de Actas de Grado</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --color-amarillo: #f9c900;
+      --color-verde: #05b700;
+      --color-azul: #094062;
+      --color-azul-hover: #062b42;
+      --color-verde-hover: #049600;
+      --fondo-claro: #f4f6f9;
+    }
+
+    body {
+      background-color: var(--fondo-claro);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: #212529;
+    }
+
+    /* Barra superior institucional */
+    .navbar-institucional {
+      background-color: var(--color-azul);
+      border-bottom: 4px solid var(--color-amarillo);
+      color: white;
+    }
+
+    .logo-header {
+      height: 48px;
+      width: auto;
+      background: white;
+      padding: 4px;
+      border-radius: 6px;
+    }
+
+    /* Botones personalizados */
+    .btn-azul {
+      background-color: var(--color-azul);
+      color: white;
+      border: none;
+    }
+    .btn-azul:hover {
+      background-color: var(--color-azul-hover);
+      color: white;
+    }
+
+    .btn-verde {
+      background-color: var(--color-verde);
+      color: white;
+      border: none;
+      font-weight: 500;
+    }
+    .btn-verde:hover {
+      background-color: var(--color-verde-hover);
+      color: white;
+    }
+
+    .badge-rol {
+      background-color: var(--color-amarillo);
+      color: var(--color-azul);
+      font-weight: 700;
+    }
+
+    /* Pestañas de navegación */
+    .nav-tabs .nav-link {
+      color: var(--color-azul);
+      font-weight: 600;
+      border: none;
+      border-bottom: 3px solid transparent;
+    }
+    .nav-tabs .nav-link.active {
+      color: var(--color-azul);
+      background-color: transparent;
+      border-bottom: 3px solid var(--color-verde);
+    }
+
+    /* Tablas */
+    .table-institucional thead {
+      background-color: var(--color-azul);
+      color: white;
+    }
+
+    /* Pantalla de Login */
+    .login-card {
+      max-width: 420px;
+      margin: 80px auto;
+      border-top: 5px solid var(--color-azul);
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(9, 64, 98, 0.12);
+    }
+
+    /* Loader */
+    #loader {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.85);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+  </style>
 </head>
 <body>
 
-    <!-- Panel de Login -->
-    <div id="login-container">
-        <img src="logo.png" alt="Logo Institucional" class="logo">
-        <h2>Ingreso a la Plataforma</h2>
-        <form id="login-form">
-            <input type="text" id="username" placeholder="Nombre de Usuario (ej. 17001 o ADMIN)" required>
-            <input type="password" id="password" placeholder="Contraseña" required>
-            <button type="submit">Ingresar</button>
-            <div id="login-msg" class="msg"></div>
+  <!-- LOADER -->
+  <div id="loader">
+    <div class="spinner-border" style="color: var(--color-azul); width: 3rem; height: 3rem;" role="status"></div>
+    <p class="mt-2 fw-semibold" style="color: var(--color-azul);">Procesando información...</p>
+  </div>
+
+  <!-- VISTA LOGIN -->
+  <div id="vista-login" class="container">
+    <div class="card login-card p-4 bg-white">
+      <div class="text-center mb-3">
+        <img id="img-logo-login" src="" alt="Escudo" style="height: 75px; display: none;" class="mb-2">
+        <h4 class="fw-bold" style="color: var(--color-azul);">Sistema Actas de Grado</h4>
+        <p class="text-muted small">Ingrese sus credenciales institucionales</p>
+      </div>
+      <form onsubmit="handleLogin(event)">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Usuario / Código DANE</label>
+          <input type="text" id="login-usuario" class="form-control" required placeholder="Ej: ADMIN o 17001">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Contraseña</label>
+          <input type="password" id="login-clave" class="form-control" required placeholder="••••••••">
+        </div>
+        <div id="login-error" class="alert alert-danger py-2 small d-none"></div>
+        <button type="submit" class="btn btn-azul w-100 py-2 fw-semibold">Ingresar al Sistema</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- VISTA PANEL PRINCIPAL -->
+  <div id="vista-app" class="d-none">
+    <nav class="navbar navbar-institucional px-4 py-2 shadow-sm">
+      <div class="d-flex align-items-center gap-3">
+        <img id="img-logo-nav" src="" alt="Logo" class="logo-header" style="display: none;">
+        <div>
+          <h5 class="mb-0 fw-bold">Gestión de Actas de Grado</h5>
+          <small class="opacity-75">Repositorio Institucional</small>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <div class="text-end">
+          <div class="fw-bold" id="lbl-usuario"></div>
+          <span class="badge badge-rol" id="lbl-rol"></span>
+        </div>
+        <button class="btn btn-outline-light btn-sm" onclick="cerrarSesion()">
+          <i class="bi bi-box-arrow-right"></i> Salir
+        </button>
+      </div>
+    </nav>
+
+    <div class="container-fluid px-4 mt-4">
+      <!-- PESTAÑAS DINÁMICAS -->
+      <ul class="nav nav-tabs mb-3" id="tabs-navegacion"></ul>
+
+      <!-- CONTENIDO DE TABLA -->
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <h5 class="mb-0 fw-bold" style="color: var(--color-azul);" id="titulo-pestana">Actas</h5>
+          </div>
+          <div class="d-flex gap-2">
+            <input type="text" id="buscador" class="form-control form-control-sm" placeholder="Buscar registro..." onkeyup="filtrarTabla()">
+            <button class="btn btn-verde btn-sm text-nowrap" onclick="abrirModalNuevo()">
+              <i class="bi bi-plus-circle"></i> Nuevo Registro
+            </button>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-institucional align-middle mb-0">
+              <thead id="tabla-head"></thead>
+              <tbody id="tabla-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL FORMULARIO DINÁMICO -->
+  <div class="modal fade" id="modalFormulario" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header" style="background-color: var(--color-azul); color: white;">
+          <h5 class="modal-title" id="modal-titulo">Registro</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form onsubmit="guardarFormulario(event)">
+          <div class="modal-body" id="modal-campos"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-verde">Guardar Cambios</button>
+          </div>
         </form>
+      </div>
     </div>
+  </div>
 
-    <!-- Panel Principal (Dashboard) -->
-    <div id="dashboard" class="hidden">
-        <header>
-            <div class="header-left">
-                <img src="logo.png" alt="Logo Institucional" class="logo-small">
-                <h1>Registro de Actas de Grado</h1>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let currentUser = null;
+    let appData = null;
+    let pestanaActual = 'Actas';
+    let filaEditando = null;
+    let modalInstance = null;
+
+    // Definición exacta de columnas según el Excel adjunto
+    const ESTRUCTURA_HOJAS = {
+      Actas: ['NUMERO ACTA', 'CODDANE', 'PDF'],
+      Graduados: ['MUNICIPIO', 'CODDANE', 'INSTITUCIÓN', 'ESTUDIANTE', 'TIPO DOCUMENTO', 'NÚMERO DOCUMENTO', 'RESOLUCIÓN', 'FECHA'],
+      Usuarios: ['NOMBRE', 'CLAVE', 'ROL', 'ESTADO'],
+      Municipio: ['MUNICIPIO'],
+      Institucion: ['CODDANE', 'INSTITUCIÓN']
+    };
+
+    window.onload = () => {
+      modalInstance = new bootstrap.Modal(document.getElementById('modalFormulario'));
+      google.script.run.withSuccessHandler(base64 => {
+        if (base64) {
+          document.getElementById('img-logo-login').src = base64;
+          document.getElementById('img-logo-login').style.display = 'inline-block';
+          document.getElementById('img-logo-nav').src = base64;
+          document.getElementById('img-logo-nav').style.display = 'inline-block';
+        }
+      }).getLogoBase64();
+    };
+
+    function toggleLoader(show) {
+      document.getElementById('loader').style.display = show ? 'flex' : 'none';
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const usuario = document.getElementById('login-usuario').value;
+      const clave = document.getElementById('login-clave').value;
+      const errorDiv = document.getElementById('login-error');
+      errorDiv.classList.add('d-none');
+      toggleLoader(true);
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res.success) {
+            toggleLoader(false);
+            errorDiv.textContent = res.message;
+            errorDiv.classList.remove('d-none');
+            return;
+          }
+          currentUser = res.user;
+          cargarDatos();
+        })
+        .withFailureHandler(err => {
+          toggleLoader(false);
+          errorDiv.textContent = 'Error de conexión: ' + err.message;
+          errorDiv.classList.remove('d-none');
+        })
+        .iniciarSesion(usuario, clave);
+    }
+
+    function cargarDatos() {
+      google.script.run
+        .withSuccessHandler(data => {
+          appData = data;
+          document.getElementById('vista-login').classList.add('d-none');
+          document.getElementById('vista-app').classList.remove('d-none');
+          document.getElementById('lbl-usuario').textContent = currentUser.nombre;
+          document.getElementById('lbl-rol').textContent = currentUser.rol;
+          construirPestanas();
+          renderizarTabla();
+          toggleLoader(false);
+        })
+        .obtenerDatosIniciales(currentUser);
+    }
+
+    function cerrarSesion() {
+      currentUser = null;
+      appData = null;
+      document.getElementById('login-clave').value = '';
+      document.getElementById('vista-app').classList.add('d-none');
+      document.getElementById('vista-login').classList.remove('d-none');
+    }
+
+    function construirPestanas() {
+      const tabs = currentUser.rol === 'ADMINISTRADOR'
+        ? ['Actas', 'Graduados', 'Usuarios', 'Institucion', 'Municipio']
+        : ['Actas', 'Graduados'];
+
+      if (!tabs.includes(pestanaActual)) pestanaActual = tabs[0];
+
+      const ul = document.getElementById('tabs-navegacion');
+      ul.innerHTML = tabs.map(tab => `
+        <li class="nav-item">
+          <button class="nav-link ${tab === pestanaActual ? 'active' : ''}" onclick="cambiarPestana('${tab}')">
+            ${tab}
+          </button>
+        </li>
+      `).join('');
+    }
+
+    function cambiarPestana(tab) {
+      pestanaActual = tab;
+      document.getElementById('buscador').value = '';
+      construirPestanas();
+      renderizarTabla();
+    }
+
+    function renderizarTabla() {
+      document.getElementById('titulo-pestana').textContent = 'Gestión de ' + pestanaActual;
+      const columnas = ESTRUCTURA_HOJAS[pestanaActual];
+      const filas = appData.tablas[pestanaActual] || [];
+
+      document.getElementById('tabla-head').innerHTML = `
+        <tr>
+          ${columnas.map(col => `<th>${col}</th>`).join('')}
+          <th class="text-end">ACCIONES</th>
+        </tr>
+      `;
+
+      const tbody = document.getElementById('tabla-body');
+      if (filas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${columnas.length + 1}" class="text-center py-4 text-muted">No hay registros disponibles</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filas.map(fila => {
+        const filaIndex = fila[fila.length - 1]; // Último elemento es el índice de fila en Sheets
+        const celdas = columnas.map((col, idx) => {
+          const valor = fila[idx] || '';
+          // Columna PDF con enlace de consulta y descarga directa
+          if (pestanaActual === 'Actas' && col === 'PDF') {
+            if (!valor) return `<td class="text-muted small">Sin archivo</td>`;
+            const fileIdMatch = valor.match(/[-\w]{25,}/);
+            const downloadUrl = fileIdMatch ? `https://drive.google.com/uc?export=download&id=${fileIdMatch[0]}` : valor;
+            return `
+              <td>
+                <a href="${valor}" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="Consultar PDF">
+                  <i class="bi bi-eye"></i> Ver
+                </a>
+                <a href="${downloadUrl}" target="_blank" class="btn btn-sm btn-outline-success" title="Descargar PDF">
+                  <i class="bi bi-download"></i> Descargar
+                </a>
+              </td>
+            `;
+          }
+          return `<td>${valor}</td>`;
+        }).join('');
+
+        return `
+          <tr>
+            ${celdas}
+            <td class="text-end text-nowrap">
+              <button class="btn btn-sm btn-warning me-1" onclick='abrirModalEditar(${JSON.stringify(fila)})' title="Editar">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="confirmarEliminar(${filaIndex})" title="Eliminar">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filtrarTabla() {
+      const filtro = document.getElementById('buscador').value.toLowerCase();
+      const filas = document.querySelectorAll('#tabla-body tr');
+      filas.forEach(tr => {
+        tr.style.display = tr.textContent.toLowerCase().includes(filtro) ? '' : 'none';
+      });
+    }
+
+    function abrirModalNuevo() {
+      filaEditando = null;
+      document.getElementById('modal-titulo').textContent = 'Nuevo Registro en ' + pestanaActual;
+      construirCamposFormulario([]);
+      modalInstance.show();
+    }
+
+    function abrirModalEditar(fila) {
+      filaEditando = fila;
+      document.getElementById('modal-titulo').textContent = 'Editar Registro en ' + pestanaActual;
+      construirCamposFormulario(fila);
+      modalInstance.show();
+    }
+
+    function construirCamposFormulario(valores) {
+      const columnas = ESTRUCTURA_HOJAS[pestanaActual];
+      const contenedor = document.getElementById('modal-campos');
+      const esOperador = currentUser.rol === 'OPERADOR';
+
+      contenedor.innerHTML = columnas.map((col, idx) => {
+        let val = valores[idx] || '';
+        if (esOperador && col === 'CODDANE') val = currentUser.nombre;
+
+        // Campo especial de archivo PDF en pestaña Actas
+        if (pestanaActual === 'Actas' && col === 'PDF') {
+          return `
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Archivo PDF del Acta</label>
+              <input type="file" id="input-pdf" accept="application/pdf" class="form-control" ${!filaEditando ? 'required' : ''}>
+              <input type="hidden" id="campo-${idx}" value="${val}">
+              ${val ? `<small class="text-success d-block mt-1">Archivo actual cargado. Suba uno nuevo solo si desea reemplazarlo.</small>` : ''}
             </div>
-            <div class="header-right">
-                <span id="user-info"></span>
-                <button id="btn-logout">Cerrar Sesión</button>
+          `;
+        }
+
+        // Select de Municipios
+        if (col === 'MUNICIPIO' && pestanaActual === 'Graduados') {
+          const opts = appData.catalogos.municipios.map(m => `<option value="${m}" ${m === val ? 'selected' : ''}>${m}</option>`).join('');
+          return `
+            <div class="mb-3">
+              <label class="form-label fw-semibold">${col}</label>
+              <select id="campo-${idx}" class="form-select" required><option value="">Seleccione...</option>${opts}</select>
             </div>
-        </header>
+          `;
+        }
 
-        <nav>
-            <button class="tab-btn active" data-target="panel-graduados">Graduados</button>
-            <button class="tab-btn" data-target="panel-actas">Actas y PDFs</button>
-        </nav>
+        // Select de Rol o Estado en Usuarios
+        if (col === 'ROL') {
+          return `
+            <div class="mb-3">
+              <label class="form-label fw-semibold">${col}</label>
+              <select id="campo-${idx}" class="form-select" required>
+                <option value="ADMINISTRADOR" ${val === 'ADMINISTRADOR' ? 'selected' : ''}>ADMINISTRADOR</option>
+                <option value="OPERADOR" ${val === 'OPERADOR' ? 'selected' : ''}>OPERADOR</option>
+              </select>
+            </div>
+          `;
+        }
 
-        <main>
-            <!-- Panel Graduados -->
-            <section id="panel-graduados" class="panel active">
-                <h2>Gestión de Graduados</h2>
-                <div class="form-container">
-                    <h3>Agregar Graduado</h3>
-                    <form id="form-graduados">
-                        <input type="text" id="g-municipio" placeholder="Municipio" required>
-                        <input type="text" id="g-coddane" placeholder="CODDANE" required>
-                        <input type="text" id="g-institucion" placeholder="Institución" required>
-                        <input type="text" id="g-estudiante" placeholder="Nombre Estudiante" required>
-                        <input type="text" id="g-tipodoc" placeholder="Tipo Documento" required>
-                        <input type="text" id="g-numdoc" placeholder="Número Documento" required>
-                        <input type="text" id="g-resolucion" placeholder="Resolución">
-                        <input type="date" id="g-fecha" required>
-                        <button type="submit">Guardar Graduado</button>
-                    </form>
-                </div>
-                <h3>Lista de Graduados</h3>
-                <div class="table-responsive">
-                    <table id="table-graduados">
-                        <thead><tr><th>Municipio</th><th>CODDANE</th><th>Institución</th><th>Estudiante</th><th>Documento</th><th>Resolución</th><th>Fecha</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </section>
+        if (col === 'ESTADO') {
+          return `
+            <div class="mb-3">
+              <label class="form-label fw-semibold">${col}</label>
+              <select id="campo-${idx}" class="form-select" required>
+                <option value="ACTIVO" ${val === 'ACTIVO' ? 'selected' : ''}>ACTIVO</option>
+                <option value="INACTIVO" ${val === 'INACTIVO' ? 'selected' : ''}>INACTIVO</option>
+              </select>
+            </div>
+          `;
+        }
 
-            <!-- Panel Actas y Subida de Archivos -->
-            <section id="panel-actas" class="panel hidden">
-                <h2>Gestión de Actas y Archivos PDF</h2>
-                <div class="form-container">
-                    <h3>Subir Nueva Acta (PDF)</h3>
-                    <form id="form-upload">
-                        <input type="text" id="a-numacta" placeholder="Número de Acta" required>
-                        <input type="text" id="a-coddane" placeholder="CODDANE" required>
-                        <input type="file" id="a-file" accept="application/pdf" required>
-                        <button type="submit">Subir y Registrar Acta</button>
-                        <div id="upload-msg" class="msg"></div>
-                    </form>
-                </div>
-                <h3>Lista de Actas</h3>
-                <div class="table-responsive">
-                    <table id="table-actas">
-                        <thead><tr><th>Número Acta</th><th>CODDANE</th><th>PDF</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </section>
-        </main>
-    </div>
+        if (col === 'TIPO DOCUMENTO') {
+          return `
+            <div class="mb-3">
+              <label class="form-label fw-semibold">${col}</label>
+              <select id="campo-${idx}" class="form-select" required>
+                <option value="CC" ${val === 'CC' ? 'selected' : ''}>Cédula de Ciudadanía (CC)</option>
+                <option value="TI" ${val === 'TI' ? 'selected' : ''}>Tarjeta de Identidad (TI)</option>
+                <option value="CE" ${val === 'CE' ? 'selected' : ''}>Cédula de Extranjería (CE)</option>
+                <option value="PPT" ${val === 'PPT' ? 'selected' : ''}>Permiso por Protección Temporal (PPT)</option>
+              </select>
+            </div>
+          `;
+        }
 
-    <script src="app.js"></script>
+        const tipoInput = col === 'FECHA' ? 'date' : 'text';
+        const soloLectura = (esOperador && col === 'CODDANE') ? 'readonly' : '';
+
+        return `
+          <div class="mb-3">
+            <label class="form-label fw-semibold">${col}</label>
+            <input type="${tipoInput}" id="campo-${idx}" class="form-control" value="${val}" ${soloLectura} required>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function guardarFormulario(e) {
+      e.preventDefault();
+      const columnas = ESTRUCTURA_HOJAS[pestanaActual];
+      const datosFila = columnas.map((_, idx) => document.getElementById(`campo-${idx}`).value);
+      const filaIndex = filaEditando ? filaEditando[filaEditando.length - 1] : null;
+
+      let archivoPdf = null;
+      if (pestanaActual === 'Actas') {
+        const fileInput = document.getElementById('input-pdf');
+        if (fileInput && fileInput.files.length > 0) {
+          archivoPdf = await leerArchivoBase64(fileInput.files[0]);
+        }
+      }
+
+      modalInstance.hide();
+      toggleLoader(true);
+
+      google.script.run
+        .withSuccessHandler(data => {
+          appData = data;
+          renderizarTabla();
+          toggleLoader(false);
+        })
+        .withFailureHandler(err => {
+          toggleLoader(false);
+          alert('Error al guardar: ' + err.message);
+        })
+        .guardarRegistro(currentUser, pestanaActual, datosFila, filaIndex, archivoPdf);
+    }
+
+    function leerArchivoBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(',')[1];
+          resolve({ name: file.name, base64: base64 });
+        };
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function confirmarEliminar(filaIndex) {
+      if (!confirm('¿Está seguro de eliminar este registro de forma permanente?')) return;
+      toggleLoader(true);
+
+      google.script.run
+        .withSuccessHandler(data => {
+          appData = data;
+          renderizarTabla();
+          toggleLoader(false);
+        })
+        .withFailureHandler(err => {
+          toggleLoader(false);
+          alert('Error al eliminar: ' + err.message);
+        })
+        .eliminarRegistro(currentUser, pestanaActual, filaIndex);
+    }
+  </script>
 </body>
 </html>
