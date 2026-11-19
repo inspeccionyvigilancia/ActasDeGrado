@@ -20,7 +20,7 @@
         </div>
     </div>
 
-    <script>
+   <script>
         document.head.insertAdjacentHTML('beforeend', UI.getStyles());
         document.getElementById('header-container').innerHTML = UI.getHeader();
 
@@ -28,19 +28,26 @@
             e.preventDefault();
             const btn = e.target.querySelector('button');
             btn.innerText = "Verificando...";
+            document.getElementById('errorMsg').style.display = 'none';
             
-            const res = await apiCall({
-                action: 'login',
-                user: document.getElementById('username').value,
-                pass: document.getElementById('password').value
-            });
+            try {
+                const res = await apiCall({
+                    action: 'login',
+                    user: document.getElementById('username').value,
+                    pass: document.getElementById('password').value
+                });
 
-            if (res.success) {
-                localStorage.setItem('user', res.user);
-                localStorage.setItem('role', res.role);
-                window.location.href = res.role === 'ADMINISTRADOR' ? 'admin.html' : 'operador.html';
-            } else {
-                document.getElementById('errorMsg').innerText = res.message;
+                if (res.success) {
+                    localStorage.setItem('user', res.user);
+                    localStorage.setItem('role', res.role);
+                    window.location.href = res.role === 'ADMINISTRADOR' ? 'admin.html' : 'operador.html';
+                } else {
+                    document.getElementById('errorMsg').innerText = res.message;
+                    document.getElementById('errorMsg').style.display = 'block';
+                    btn.innerText = "INGRESAR";
+                }
+            } catch (error) {
+                document.getElementById('errorMsg').innerText = "Error de conexión con el servidor. Revisa tu URL de Apps Script.";
                 document.getElementById('errorMsg').style.display = 'block';
                 btn.innerText = "INGRESAR";
             }
