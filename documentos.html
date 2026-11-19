@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <title>Documentos PDF - Gestión de Actas</title>
     <script src="config.js"></script>
+    <style>
+        .pagination-container { text-align: center; margin-top: 15px; }
+        .pagination-container button { padding: 5px 15px; margin: 0 5px; font-size: 14px; }
+        .action-link { text-decoration: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; margin-right: 5px; display: inline-block;}
+        .link-view { background-color: #094062; color: white; }
+        .link-download { background-color: #05b700; color: white; }
+        .link-view:hover, .link-download:hover { opacity: 0.8; }
+    </style>
 </head>
 <body>
     <div id="header-container"></div>
@@ -25,17 +33,18 @@
             <p id="uploadStatus" style="margin-top: 20px; font-weight: bold;"></p>
         </div>
 
-        <!-- MÓDULO EXCLUSIVO PARA ADMINISTRADOR -->
+        <!-- MÓDULO EXCLUSIVO PARA ADMINISTRADOR (AHORA CON PAGINACIÓN) -->
         <div id="adminFileViewer" class="card" style="display: none; margin-top: 30px;">
-            <h3 style="color: #094062;">Consultar Archivos Almacenados en Drive</h3>
-            <input type="text" id="searchFiles" class="search-bar" placeholder="🔍 Buscar archivo por nombre..." onkeyup="filterTable('searchFiles', 'filesTable')">
+            <h3 style="color: #094062;">Consultar y Descargar Archivos Almacenados en Drive</h3>
+            <input type="text" id="searchFiles" class="search-bar" placeholder="🔍 Buscar archivo por nombre..." onkeyup="handleSearch()">
+            
             <div style="overflow-x: auto;">
                 <table id="filesTable">
                     <thead>
                         <tr>
                             <th>Nombre del Archivo</th>
                             <th>Fecha de Creación</th>
-                            <th>Enlace</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="filesBody">
@@ -43,6 +52,9 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Controles de Paginación -->
+            <div id="paginationControls" class="pagination-container"></div>
         </div>
     </div>
 
@@ -50,6 +62,11 @@
         if(!localStorage.getItem('user')) window.location.href = 'index.html';
         document.head.insertAdjacentHTML('beforeend', UI.getStyles());
         document.getElementById('header-container').innerHTML = UI.getHeader();
+
+        let allFiles = []; // Almacena todos los archivos
+        let filteredFiles = []; // Almacena los resultados de búsqueda
+        let currentPage = 1;
+        const itemsPerPage = 10; // Cantidad de archivos a mostrar por página
 
         // Mostrar gestor de archivos solo al Admin y cargar los datos
         if (localStorage.getItem('role') === 'ADMINISTRADOR') {
@@ -91,7 +108,7 @@
                     if(result.success) {
                         document.getElementById('uploadStatus').innerText = "✅ Archivo subido exitosamente.";
                         document.getElementById('uploadStatus').style.color = "#05b700";
-                        if (localStorage.getItem('role') === 'ADMINISTRADOR') loadFiles(); // Recargar la tabla
+                        if (localStorage.getItem('role') === 'ADMINISTRADOR') loadFiles(); 
                     } else {
                         document.getElementById('uploadStatus').innerText = "❌ Error al subir.";
                         document.getElementById('uploadStatus').style.color = "red";
@@ -105,19 +122,76 @@
         async function loadFiles() {
             const res = await apiCall({ action: 'getFiles' });
             if (res.success) {
-                const tbody = document.getElementById('filesBody');
-                if (res.files.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No hay archivos almacenados.</td></tr>';
-                    return;
-                }
-                tbody.innerHTML = res.files.map(f => `
+                // Ordenar del más reciente al más antiguo
+                allFiles = res.files.sort((a, b) => new Date(b.date) - new Date(a.date));
+                filteredFiles = [...allFiles];
+                currentPage = 1;
+                renderFiles();
+            } else {
+                document.getElementById('filesBody').innerHTML = '<tr><td colspan="3" style="text-align:center; color:red;">Error cargando archivos.</td></tr>';
+            }
+        }
+
+        function handleSearch() {
+            const query = document.getElementById('searchFiles').value.toLowerCase();
+            filteredFiles = allFiles.filter(f => f.name.toLowerCase().includes(query));
+            currentPage = 1;
+            renderFiles();
+        }
+
+        function renderFiles() {
+            const tbody = document.getElementById('filesBody');
+            
+            if (filteredFiles.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No se encontraron archivos.</td></tr>';
+                document.getElementById('paginationControls').innerHTML = '';
+                return;
+            }
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedFiles = filteredFiles.slice(startIndex, endIndex);
+
+            tbody.innerHTML = paginatedFiles.map(f => {
+                // Se genera un enlace especial para forzar la descarga de Google Drive usando el ID
+                const downloadUrl = `https://drive.google.com/uc?export=download&id=${f.id}`;
+                return `
                     <tr>
                         <td>${f.name}</td>
                         <td>${new Date(f.date).toLocaleDateString()}</td>
-                        <td><a href="${f.url}" target="_blank" style="color: #05b700; font-weight: bold;">Ver PDF</a></td>
+                        <td>
+                            <a href="${f.url}" target="_blank" class="action-link link-view">👁️ Consultar</a>
+                            <a href="${downloadUrl}" class="action-link link-download">⬇️ Descargar</a>
+                        </td>
                     </tr>
-                `).join('');
+                `;
+            }).join('');
+
+            renderPagination();
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredFiles.length / itemsPerPage);
+            const controls = document.getElementById('paginationControls');
+            let html = '';
+            
+            if (totalPages > 1) {
+                if (currentPage > 1) {
+                    html += `<button onclick="changePage(${currentPage - 1})">⬅ Anterior</button>`;
+                }
+                
+                html += `<span style="margin: 0 15px; font-weight: bold;">Página ${currentPage} de ${totalPages}</span>`;
+                
+                if (currentPage < totalPages) {
+                    html += `<button onclick="changePage(${currentPage + 1})">Siguiente ➡</button>`;
+                }
             }
+            controls.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderFiles();
         }
     </script>
 </body>
