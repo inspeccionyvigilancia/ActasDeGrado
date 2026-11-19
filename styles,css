@@ -1,85 +1,125 @@
-/* Colores corporativos basados en color.png */
 :root {
-    --amarillo: #f9c900;
-    --verde: #05b700;
-    --azul-oscuro: #094062;
-    --fondo: #f4f4f9;
+    --color-amarillo: #f9c900;
+    --color-verde: #05b700;
+    --color-azul: #094062;
+    --bg-light: #f4f7f6;
 }
 
 body {
     font-family: Arial, sans-serif;
-    background-color: var(--fondo);
     margin: 0;
     padding: 0;
-    color: var(--azul-oscuro);
+    background-color: var(--bg-light);
+    color: #333;
 }
+
+.hidden { display: none !important; }
 
 /* Login */
 #login-container {
-    width: 300px;
+    max-width: 400px;
     margin: 100px auto;
-    padding: 30px;
     background: white;
+    padding: 30px;
     border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     text-align: center;
-    border-top: 5px solid var(--verde);
+    border-top: 5px solid var(--color-azul);
 }
 
 .logo { width: 120px; margin-bottom: 20px; }
-.logo-small { height: 40px; vertical-align: middle; }
+.logo-small { width: 40px; margin-right: 15px; }
 
-input {
-    width: 90%;
+input, select {
+    width: 100%;
     padding: 10px;
     margin: 10px 0;
     border: 1px solid #ccc;
     border-radius: 4px;
+    box-sizing: border-box;
 }
 
 button {
     width: 100%;
-    padding: 10px;
-    background-color: var(--azul-oscuro);
+    background-color: var(--color-verde);
     color: white;
     border: none;
+    padding: 12px;
+    font-size: 16px;
     border-radius: 4px;
     cursor: pointer;
     font-weight: bold;
 }
-button:hover { background-color: var(--verde); }
+button:hover { background-color: #049600; }
 
-/* Dashboard */
+/* Dashboard Header */
 header {
-    background-color: var(--azul-oscuro);
+    background-color: var(--color-azul);
     color: white;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 30px;
+    padding: 15px 30px;
 }
-header h1 { margin: 0; font-size: 20px; color: var(--amarillo); }
-.btn-logout { width: auto; background-color: #d9534f; margin-left: 15px;}
+.header-left { display: flex; align-items: center; }
+.header-right { display: flex; align-items: center; gap: 20px; }
+#btn-logout { background-color: #d9534f; width: auto; padding: 8px 15px; }
 
+/* Navegación */
 nav {
-    background-color: white;
-    padding: 10px 30px;
-    border-bottom: 3px solid var(--amarillo);
+    background-color: var(--color-amarillo);
     display: flex;
-    gap: 10px;
+    padding: 0 30px;
 }
-nav button { width: auto; background-color: var(--fondo); color: var(--azul-oscuro); border: 1px solid var(--azul-oscuro);}
-nav button:hover { background-color: var(--amarillo); color: var(--azul-oscuro); }
+.tab-btn {
+    background: none;
+    color: var(--color-azul);
+    width: auto;
+    padding: 15px 20px;
+    border-radius: 0;
+    font-size: 16px;
+}
+.tab-btn.active {
+    background-color: white;
+    border-top: 3px solid var(--color-azul);
+}
 
+/* Paneles */
 main { padding: 30px; }
+.form-container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    border-left: 4px solid var(--color-verde);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.form-container form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    align-items: end;
+}
+
+/* Tablas */
+.table-responsive { overflow-x: auto; }
 table {
     width: 100%;
     border-collapse: collapse;
     background: white;
-    margin-top: 15px;
 }
-th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-th { background-color: var(--azul-oscuro); color: white; }
+th, td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+th { background-color: var(--color-azul); color: white; }
+tr:nth-child(even) { background-color: #f9f9f9; }
 
-.form-add { margin-bottom: 20px; background: white; padding: 15px; border-radius: 5px;}
-.btn-add { background-color: var(--verde); width: 150px;}
+a.pdf-link {
+    color: var(--color-azul);
+    text-decoration: none;
+    font-weight: bold;
+}
+a.pdf-link:hover { text-decoration: underline; color: var(--color-amarillo); }
+.msg { margin-top: 10px; font-weight: bold; color: var(--color-azul); }
