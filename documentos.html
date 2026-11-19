@@ -24,12 +24,38 @@
             
             <p id="uploadStatus" style="margin-top: 20px; font-weight: bold;"></p>
         </div>
+
+        <!-- MÓDULO EXCLUSIVO PARA ADMINISTRADOR -->
+        <div id="adminFileViewer" class="card" style="display: none; margin-top: 30px;">
+            <h3 style="color: #094062;">Consultar Archivos Almacenados en Drive</h3>
+            <input type="text" id="searchFiles" class="search-bar" placeholder="🔍 Buscar archivo por nombre..." onkeyup="filterTable('searchFiles', 'filesTable')">
+            <div style="overflow-x: auto;">
+                <table id="filesTable">
+                    <thead>
+                        <tr>
+                            <th>Nombre del Archivo</th>
+                            <th>Fecha de Creación</th>
+                            <th>Enlace</th>
+                        </tr>
+                    </thead>
+                    <tbody id="filesBody">
+                        <tr><td colspan="3" style="text-align:center;">Cargando archivos...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
         if(!localStorage.getItem('user')) window.location.href = 'index.html';
         document.head.insertAdjacentHTML('beforeend', UI.getStyles());
         document.getElementById('header-container').innerHTML = UI.getHeader();
+
+        // Mostrar gestor de archivos solo al Admin y cargar los datos
+        if (localStorage.getItem('role') === 'ADMINISTRADOR') {
+            document.getElementById('adminFileViewer').style.display = 'block';
+            loadFiles();
+        }
 
         document.getElementById('pdfFile').addEventListener('change', function(e) {
             if(e.target.files.length > 0) {
@@ -50,7 +76,6 @@
             reader.onload = function(e) {
                 const base64Data = e.target.result.split(',')[1];
                 
-                // Llamada nativa a fetch para usar POST con URL Encoded (mejor para archivos en GAS)
                 fetch(CONFIG.API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -66,6 +91,7 @@
                     if(result.success) {
                         document.getElementById('uploadStatus').innerText = "✅ Archivo subido exitosamente.";
                         document.getElementById('uploadStatus').style.color = "#05b700";
+                        if (localStorage.getItem('role') === 'ADMINISTRADOR') loadFiles(); // Recargar la tabla
                     } else {
                         document.getElementById('uploadStatus').innerText = "❌ Error al subir.";
                         document.getElementById('uploadStatus').style.color = "red";
@@ -74,6 +100,24 @@
                 });
             };
             reader.readAsDataURL(file);
+        }
+
+        async function loadFiles() {
+            const res = await apiCall({ action: 'getFiles' });
+            if (res.success) {
+                const tbody = document.getElementById('filesBody');
+                if (res.files.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No hay archivos almacenados.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = res.files.map(f => `
+                    <tr>
+                        <td>${f.name}</td>
+                        <td>${new Date(f.date).toLocaleDateString()}</td>
+                        <td><a href="${f.url}" target="_blank" style="color: #05b700; font-weight: bold;">Ver PDF</a></td>
+                    </tr>
+                `).join('');
+            }
         }
     </script>
 </body>
