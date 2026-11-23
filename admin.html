@@ -19,7 +19,7 @@
                 <button class="btn-green" onclick="window.location.href='documentos.html'">Gestor PDF</button>
             </nav>
 
-            <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Buscar en la tabla actual (Mote de búsqueda)..." onkeyup="filterTable('searchInput', 'dataTable')">
+            <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Buscar en la tabla actual..." onkeyup="filterTable('searchInput', 'dataTable')">
             
             <div id="formContainer" style="margin-bottom: 20px; display:none;">
                 <h4 style="color: #094062;">Agregar Nuevo Registro</h4>
@@ -79,6 +79,23 @@
             if(confirm("¿Eliminar este registro?")) {
                 await apiCall({ action: 'delete', sheet: currentSheet, rowIndex: index });
                 loadSheet(currentSheet);
+            }
+        }
+
+        // --- FUNCIÓN DE BÚSQUEDA AGREGADA ---
+        function filterTable(inputId, tableId) {
+            const input = document.getElementById(inputId).value.toLowerCase();
+            const table = document.getElementById(tableId);
+            const tbody = table.querySelector("tbody");
+            const rows = tbody.getElementsByTagName("tr");
+
+            for (let i = 0; i < rows.length; i++) {
+                let rowText = rows[i].innerText.toLowerCase();
+                if (rowText.includes(input)) {
+                    rows[i].style.display = "";
+                } else {
+                    rows[i].style.display = "none";
+                }
             }
         }
     </script>
