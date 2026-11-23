@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Gestión de Actas</title>
     <script src="config.js"></script>
 </head>
@@ -9,8 +10,8 @@
     <div id="header-container"></div>
     <div class="container">
         <div class="card">
-            <h2>Panel de Administrador (Acceso Total)</h2>
-            <nav style="margin-bottom: 20px;">
+            <h2>Panel de Administrador</h2>
+            <nav class="nav-menu">
                 <button onclick="loadSheet('Usuarios')">Usuarios</button>
                 <button onclick="loadSheet('Actas')">Actas</button>
                 <button onclick="loadSheet('Municipio')">Municipios</button>
@@ -19,17 +20,19 @@
                 <button class="btn-green" onclick="window.location.href='documentos.html'">Gestor PDF</button>
             </nav>
 
-            <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Buscar en la tabla actual..." onkeyup="filterTable('searchInput', 'dataTable')">
+            <p id="systemStatus" style="color: #094062; font-weight: bold;">⏳ Cargando datos de validación del sistema...</p>
+
+            <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Buscar en la tabla actual..." onkeyup="filterTable('searchInput', 'dataTable')" style="display: none;">
             
             <div id="formContainer" style="margin-bottom: 20px; display:none;">
                 <h4 style="color: #094062;">Agregar Nuevo Registro</h4>
-                <div id="dynamicInputs"></div>
-                <button onclick="saveRecord()" class="btn-green">Guardar</button>
+                <div id="dynamicInputs" class="form-grid"></div>
+                <button onclick="saveRecord()" class="btn-green">Guardar Registro</button>
             </div>
 
             <h3 id="currentSheetTitle" style="color: #05b700;"></h3>
-            <div style="overflow-x: auto;">
-                <table id="dataTable">
+            <div class="table-responsive">
+                <table id="dataTable" style="display:none;">
                     <thead id="dataHead"></thead>
                     <tbody id="dataBody"></tbody>
                 </table>
@@ -42,10 +45,30 @@
         document.head.insertAdjacentHTML('beforeend', UI.getStyles());
         document.getElementById('header-container').innerHTML = UI.getHeader();
 
+        let globalData = { municipios: [], instituciones: [], actas: [], files: [] };
         let currentSheet = '';
         let currentHeaders = [];
 
+        window.onload = async () => {
+            const [munRes, instRes, actasRes, filesRes] = await Promise.all([
+                apiCall({ action: 'getData', sheet: 'Municipio' }),
+                apiCall({ action: 'getData', sheet: 'Institucion' }),
+                apiCall({ action: 'getData', sheet: 'Actas' }),
+                apiCall({ action: 'getFiles' })
+            ]);
+            
+            if(munRes.success) globalData.municipios = munRes.data.map(r => r[0]);
+            if(instRes.success) globalData.instituciones = instRes.data;
+            if(actasRes.success) globalData.actas = actasRes.data;
+            if(filesRes.success) globalData.files = filesRes.files;
+            
+            document.getElementById('systemStatus').innerText = "✅ Sistema validado y listo. Seleccione un módulo.";
+            document.getElementById('systemStatus').style.color = "#05b700";
+        };
+
         async function loadSheet(sheetName) {
+            if (globalData.municipios.length === 0) return alert("Por favor espere a que carguen los datos del sistema...");
+            
             currentSheet = sheetName;
             document.getElementById('currentSheetTitle').innerText = "Cargando " + sheetName + "...";
             const res = await apiCall({ action: 'getData', sheet: sheetName });
@@ -53,17 +76,48 @@
             if(res.success) {
                 currentHeaders = res.headers;
                 document.getElementById('currentSheetTitle').innerText = "Tabla: " + sheetName;
+                document.getElementById('searchInput').style.display = "block";
+                document.getElementById('dataTable').style.display = "table";
                 
-                // Generar Inputs
+                // Generar Formulario Dinámico con Listas Desplegables Restrictivas
                 document.getElementById('formContainer').style.display = 'block';
-                document.getElementById('dynamicInputs').innerHTML = currentHeaders.map((h, i) => 
-                    `<input type="text" id="input_${i}" placeholder="${h}" style="width: 22%; margin-right: 1%;">`
-                ).join('');
+                document.getElementById('dynamicInputs').innerHTML = currentHeaders.map((h, i) => {
+                    if (h === 'MUNICIPIO') {
+                        return `<select id="input_${i}"><option value="">Seleccione Municipio...</option>` + 
+                               globalData.municipios.map(m => `<option value="${m}">${m}</option>`).join('') + `</select>`;
+                    }
+                    if (h === 'INSTITUCIÓN') {
+                        return `<select id="input_${i}"><option value="">Seleccione Institución...</option>` + 
+                               globalData.instituciones.map(inst => `<option value="${inst[1]}">${inst[1]} (${inst[0]})</option>`).join('') + `</select>`;
+                    }
+                    if (h === 'RESOLUCIÓN') {
+                        return `<select id="input_${i}"><option value="">Seleccione Acta Previa...</option>` + 
+                               globalData.actas.map(a => `<option value="${a[0]}">${a[0]}</option>`).join('') + `</select>`;
+                    }
+                    if (h === 'PDF' && sheetName === 'Actas') {
+                        return `<select id="input_${i}"><option value="">Seleccione Archivo PDF subido...</option>` + 
+                               globalData.files.map(f => `<option value="${f.name}">${f.name}</option>`).join('') + `</select>`;
+                    }
+                    return `<input type="text" id="input_${i}" placeholder="${h}">`;
+                }).join('');
 
                 // Generar Tabla
                 document.getElementById('dataHead').innerHTML = `<tr>${currentHeaders.map(h => `<th>${h}</th>`).join('')}<th>Acciones</th></tr>`;
                 document.getElementById('dataBody').innerHTML = res.data.map((row, index) => 
-                    `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}
+                    `<tr>${row.map((cell, i) => {
+                        let header = currentHeaders[i].toUpperCase();
+                        let text = cell.toString().trim();
+                        if(!text) return '<td></td>';
+                        
+                        // Validar Enlace a PDF
+                        if (header.includes('PDF') || header.includes('RESOLUCIÓN') || text.toLowerCase().endsWith('.pdf')) {
+                            let foundFile = globalData.files.find(f => f.name === text || f.name === text + '.pdf');
+                            if (foundFile) {
+                                return `<td><a href="${foundFile.url}" target="_blank" style="color:#094062; font-weight:bold; text-decoration:underline;">📄 Ver Archivo</a></td>`;
+                            }
+                        }
+                        return `<td>${text}</td>`;
+                    }).join('')}
                      <td><button class="btn-danger" onclick="deleteRecord(${index})">Eliminar</button></td></tr>`
                 ).join('');
             }
@@ -71,8 +125,21 @@
 
         async function saveRecord() {
             const rowData = currentHeaders.map((_, i) => document.getElementById(`input_${i}`).value);
+            
+            // Validación estricta de vacíos
+            if(rowData.includes("")) {
+                alert("Todos los campos son obligatorios. Seleccione de la lista o ingrese el dato.");
+                return;
+            }
+
             await apiCall({ action: 'insert', sheet: currentSheet, row: rowData });
-            loadSheet(currentSheet); // Recargar
+            
+            // Actualizar datos globales por si se insertó una nueva Acta
+            if(currentSheet === 'Actas') {
+                const actasRes = await apiCall({ action: 'getData', sheet: 'Actas' });
+                if(actasRes.success) globalData.actas = actasRes.data;
+            }
+            loadSheet(currentSheet);
         }
 
         async function deleteRecord(index) {
@@ -82,20 +149,11 @@
             }
         }
 
-        // --- FUNCIÓN DE BÚSQUEDA AGREGADA ---
         function filterTable(inputId, tableId) {
             const input = document.getElementById(inputId).value.toLowerCase();
-            const table = document.getElementById(tableId);
-            const tbody = table.querySelector("tbody");
-            const rows = tbody.getElementsByTagName("tr");
-
+            const rows = document.getElementById(tableId).querySelector("tbody").getElementsByTagName("tr");
             for (let i = 0; i < rows.length; i++) {
-                let rowText = rows[i].innerText.toLowerCase();
-                if (rowText.includes(input)) {
-                    rows[i].style.display = "";
-                } else {
-                    rows[i].style.display = "none";
-                }
+                rows[i].style.display = rows[i].innerText.toLowerCase().includes(input) ? "" : "none";
             }
         }
     </script>
