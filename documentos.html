@@ -2,12 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Documentos PDF - Gestión de Actas</title>
     <script src="config.js"></script>
     <style>
         .pagination-container { text-align: center; margin-top: 15px; }
         .pagination-container button { padding: 5px 15px; margin: 0 5px; font-size: 14px; }
-        .action-link { text-decoration: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; margin-right: 5px; display: inline-block;}
+        .action-link { text-decoration: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; margin-right: 5px; display: inline-block; margin-bottom: 5px;}
         .link-view { background-color: #094062; color: white; }
         .link-download { background-color: #05b700; color: white; }
         .link-view:hover, .link-download:hover { opacity: 0.8; }
@@ -33,12 +34,14 @@
             <p id="uploadStatus" style="margin-top: 20px; font-weight: bold;"></p>
         </div>
 
-        <!-- MÓDULO EXCLUSIVO PARA ADMINISTRADOR (AHORA CON PAGINACIÓN) -->
+        <!-- MÓDULO EXCLUSIVO PARA ADMINISTRADOR -->
         <div id="adminFileViewer" class="card" style="display: none; margin-top: 30px;">
             <h3 style="color: #094062;">Consultar y Descargar Archivos Almacenados en Drive</h3>
-            <input type="text" id="searchFiles" class="search-bar" placeholder="🔍 Buscar archivo por nombre..." onkeyup="handleSearch()">
+            <p style="color: #666; font-size: 14px;">Utilice el buscador para encontrar un acta. <b>Los archivos están ocultos por defecto.</b></p>
             
-            <div style="overflow-x: auto;">
+            <input type="text" id="searchFiles" class="search-bar" placeholder="🔍 Escriba el nombre del archivo o número de acta aquí..." onkeyup="handleSearch()">
+            
+            <div class="table-responsive">
                 <table id="filesTable">
                     <thead>
                         <tr>
@@ -48,7 +51,7 @@
                         </tr>
                     </thead>
                     <tbody id="filesBody">
-                        <tr><td colspan="3" style="text-align:center;">Cargando archivos...</td></tr>
+                        <tr><td colspan="3" style="text-align:center;">⏳ Conectando de forma segura con Google Drive...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -63,12 +66,12 @@
         document.head.insertAdjacentHTML('beforeend', UI.getStyles());
         document.getElementById('header-container').innerHTML = UI.getHeader();
 
-        let allFiles = []; // Almacena todos los archivos
-        let filteredFiles = []; // Almacena los resultados de búsqueda
+        let allFiles = []; // Almacena los metadatos pero no los muestra
+        let filteredFiles = []; 
         let currentPage = 1;
-        const itemsPerPage = 10; // Cantidad de archivos a mostrar por página
+        const itemsPerPage = 10; 
 
-        // Mostrar gestor de archivos solo al Admin y cargar los datos
+        // Mostrar gestor de archivos solo al Admin y cargar los datos en segundo plano
         if (localStorage.getItem('role') === 'ADMINISTRADOR') {
             document.getElementById('adminFileViewer').style.display = 'block';
             loadFiles();
@@ -122,18 +125,27 @@
         async function loadFiles() {
             const res = await apiCall({ action: 'getFiles' });
             if (res.success) {
-                // Ordenar del más reciente al más antiguo
+                // Se ordenan los datos pero NO se muestran
                 allFiles = res.files.sort((a, b) => new Date(b.date) - new Date(a.date));
-                filteredFiles = [...allFiles];
-                currentPage = 1;
-                renderFiles();
+                filteredFiles = []; 
+                document.getElementById('filesBody').innerHTML = '<tr><td colspan="3" style="text-align:center; color:#094062; font-weight:bold; padding:30px;">✅ Buscador listo.<br><br>Ingrese un nombre o número de acta para visualizar los documentos.</td></tr>';
             } else {
                 document.getElementById('filesBody').innerHTML = '<tr><td colspan="3" style="text-align:center; color:red;">Error cargando archivos.</td></tr>';
             }
         }
 
         function handleSearch() {
-            const query = document.getElementById('searchFiles').value.toLowerCase();
+            const query = document.getElementById('searchFiles').value.toLowerCase().trim();
+            
+            // Si el buscador se borra o está vacío, oculta nuevamente todos los archivos
+            if (query === "") {
+                filteredFiles = [];
+                document.getElementById('filesBody').innerHTML = '<tr><td colspan="3" style="text-align:center; color:#094062; font-weight:bold; padding:30px;">Buscador en espera.<br><br>Ingrese un criterio de búsqueda.</td></tr>';
+                document.getElementById('paginationControls').innerHTML = '';
+                return;
+            }
+
+            // Filtra y muestra solo lo que coincida
             filteredFiles = allFiles.filter(f => f.name.toLowerCase().includes(query));
             currentPage = 1;
             renderFiles();
@@ -143,7 +155,7 @@
             const tbody = document.getElementById('filesBody');
             
             if (filteredFiles.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No se encontraron archivos.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">❌ No se encontraron archivos que coincidan con su búsqueda.</td></tr>';
                 document.getElementById('paginationControls').innerHTML = '';
                 return;
             }
@@ -153,7 +165,6 @@
             const paginatedFiles = filteredFiles.slice(startIndex, endIndex);
 
             tbody.innerHTML = paginatedFiles.map(f => {
-                // Se genera un enlace especial para forzar la descarga de Google Drive usando el ID
                 const downloadUrl = `https://drive.google.com/uc?export=download&id=${f.id}`;
                 return `
                     <tr>
