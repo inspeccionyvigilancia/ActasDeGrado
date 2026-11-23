@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Operador - Gestión de Actas</title>
     <script src="config.js"></script>
 </head>
@@ -10,23 +11,25 @@
     <div class="container">
         <div class="card">
             <h2>Panel de Operador <span style="color:#05b700; font-size:16px;">(CODDANE: <span id="userBadge"></span>)</span></h2>
-            <nav style="margin-bottom: 20px;">
+            <nav class="nav-menu">
                 <button onclick="loadSheet('Actas', 1)">Mis Actas</button>
                 <button onclick="loadSheet('Graduados', 1)">Mis Graduados</button>
                 <button class="btn-green" onclick="window.location.href='documentos.html'">Subir PDFs</button>
             </nav>
+            
+            <p id="systemStatus" style="color: #094062; font-weight: bold;">⏳ Sincronizando repositorio documental...</p>
 
-            <input type="text" id="searchInputOp" class="search-bar" placeholder="🔍 Buscar estudiante, documento o resolución..." onkeyup="filterTable('searchInputOp', 'dataTableOp')">
+            <input type="text" id="searchInputOp" class="search-bar" placeholder="🔍 Buscar estudiante, documento o resolución..." onkeyup="filterTable('searchInputOp', 'dataTableOp')" style="display:none;">
             
             <div id="formContainerOp" style="margin-bottom: 20px; display:none;">
                 <h4 style="color: #094062;">Agregar Nuevo Registro</h4>
-                <div id="dynamicInputsOp"></div>
-                <button onclick="saveRecordOp()" class="btn-green">Guardar</button>
+                <div id="dynamicInputsOp" class="form-grid"></div>
+                <button onclick="saveRecordOp()" class="btn-green">Guardar Registro</button>
             </div>
 
             <h3 id="currentSheetTitleOp" style="color: #094062;"></h3>
-            <div style="overflow-x: auto;">
-                <table id="dataTableOp">
+            <div class="table-responsive">
+                <table id="dataTableOp" style="display:none;">
                     <thead id="dataHeadOp"></thead>
                     <tbody id="dataBodyOp"></tbody>
                 </table>
@@ -42,62 +45,84 @@
         document.getElementById('header-container').innerHTML = UI.getHeader();
         document.getElementById('userBadge').innerText = userCoddane;
 
+        let globalData = { municipios: [], instituciones: [], actas: [], files: [] };
         let currentSheet = '';
         let currentHeaders = [];
 
-        async function loadSheet(sheetName, coddaneIndex) {
-            currentSheet = sheetName;
-            document.getElementById('currentSheetTitleOp').innerText = "Cargando " + sheetName + " y buscando archivos...";
-            
-            // Promise.all permite buscar los datos de Excel y los archivos de Drive al mismo tiempo
-            const [res, filesRes] = await Promise.all([
-                apiCall({ action: 'getData', sheet: sheetName, filterCol: coddaneIndex, filterVal: userCoddane }),
+        window.onload = async () => {
+            const [munRes, instRes, actasRes, filesRes] = await Promise.all([
+                apiCall({ action: 'getData', sheet: 'Municipio' }),
+                apiCall({ action: 'getData', sheet: 'Institucion' }),
+                apiCall({ action: 'getData', sheet: 'Actas', filterCol: 1, filterVal: userCoddane }), 
                 apiCall({ action: 'getFiles' })
             ]);
             
-            // Guardamos la lista de archivos proveniente de Drive
-            let driveFiles = (filesRes && filesRes.success) ? filesRes.files : [];
+            if(munRes.success) globalData.municipios = munRes.data.map(r => r[0]);
+            if(instRes.success) globalData.instituciones = instRes.data.filter(i => i[0].toString() === userCoddane);
+            if(actasRes.success) globalData.actas = actasRes.data;
+            if(filesRes.success) globalData.files = filesRes.files;
+            
+            document.getElementById('systemStatus').innerText = "✅ Sincronización completa. Seleccione un módulo.";
+            document.getElementById('systemStatus').style.color = "#05b700";
+        };
+
+        async function loadSheet(sheetName, coddaneIndex) {
+            if (globalData.municipios.length === 0) return alert("Espere a que sincronicen los datos...");
+
+            currentSheet = sheetName;
+            document.getElementById('currentSheetTitleOp').innerText = "Cargando " + sheetName + "...";
+            
+            const res = await apiCall({ action: 'getData', sheet: sheetName, filterCol: coddaneIndex, filterVal: userCoddane });
 
             if(res.success) {
                 currentHeaders = res.headers;
                 document.getElementById('currentSheetTitleOp').innerText = "Tabla: " + sheetName;
+                document.getElementById('searchInputOp').style.display = 'block';
+                document.getElementById('dataTableOp').style.display = 'table';
                 
+                // Generar Inputs Dinámicos 
                 document.getElementById('formContainerOp').style.display = 'block';
                 document.getElementById('dynamicInputsOp').innerHTML = currentHeaders.map((h, i) => {
-                    let isCoddane = (i === coddaneIndex) ? `value="${userCoddane}" readonly style="background:#eee; width: 22%; margin-right: 1%;"` : `placeholder="${h}" style="width: 22%; margin-right: 1%;"`;
-                    return `<input type="text" id="inputOp_${i}" ${isCoddane}>`
+                    // Bloqueo del Código DANE
+                    if (i === coddaneIndex) {
+                        return `<input type="text" id="inputOp_${i}" value="${userCoddane}" readonly style="background:#eee;">`;
+                    }
+                    
+                    if (h === 'MUNICIPIO') {
+                        return `<select id="inputOp_${i}"><option value="">Seleccione Municipio...</option>` + 
+                               globalData.municipios.map(m => `<option value="${m}">${m}</option>`).join('') + `</select>`;
+                    }
+                    if (h === 'INSTITUCIÓN') {
+                        return `<select id="inputOp_${i}"><option value="">Seleccione Institución...</option>` + 
+                               globalData.instituciones.map(inst => `<option value="${inst[1]}">${inst[1]}</option>`).join('') + `</select>`;
+                    }
+                    if (h === 'RESOLUCIÓN') {
+                        return `<select id="inputOp_${i}"><option value="">Seleccione Acta Previa...</option>` + 
+                               globalData.actas.map(a => `<option value="${a[0]}">${a[0]}</option>`).join('') + `</select>`;
+                    }
+                    if (h === 'PDF' && sheetName === 'Actas') {
+                        return `<select id="inputOp_${i}"><option value="">Seleccione Archivo PDF subido...</option>` + 
+                               globalData.files.map(f => `<option value="${f.name}">${f.name}</option>`).join('') + `</select>`;
+                    }
+                    
+                    return `<input type="text" id="inputOp_${i}" placeholder="${h}">`;
                 }).join('');
 
+                // Generar Tabla
                 document.getElementById('dataHeadOp').innerHTML = `<tr>${currentHeaders.map(h => `<th>${h}</th>`).join('')}</tr>`;
-                
-                // Mapeo de la tabla con detector de archivos PDF
                 document.getElementById('dataBodyOp').innerHTML = res.data.map(row => 
                     `<tr>${row.map((cell, index) => {
-                        let text = cell.toString().trim();
                         let header = currentHeaders[index].toUpperCase();
-                        
+                        let text = cell.toString().trim();
                         if (!text) return `<td></td>`;
 
-                        // 1. Si la celda contiene directamente un enlace pegado (empieza con http)
-                        if (text.startsWith('http')) {
-                            return `<td><a href="${text}" target="_blank" style="color: #094062; font-weight: bold; text-decoration: underline;">📄 Ver Archivo</a></td>`;
-                        }
-
-                        // 2. Si la columna se llama PDF o el texto termina en .pdf
-                        if (header.includes('PDF') || text.toLowerCase().endsWith('.pdf')) {
-                            
-                            // Buscamos si el nombre existe en la lista de Drive
-                            let foundFile = driveFiles.find(f => 
-                                f.name.toLowerCase() === text.toLowerCase() || 
-                                f.name.toLowerCase() === text.toLowerCase() + '.pdf'
-                            );
-                            
+                        // Validar y enlazar PDF
+                        if (header.includes('PDF') || header.includes('RESOLUCIÓN') || text.toLowerCase().endsWith('.pdf')) {
+                            let foundFile = globalData.files.find(f => f.name === text || f.name === text + '.pdf');
                             if (foundFile) {
-                                return `<td><a href="${foundFile.url}" target="_blank" style="color: #094062; font-weight: bold; text-decoration: underline;">📄 ${text}</a></td>`;
+                                return `<td><a href="${foundFile.url}" target="_blank" style="color: #094062; font-weight: bold; text-decoration: underline;">📄 Ver Archivo</a></td>`;
                             }
                         }
-                        
-                        // Si no es PDF o no se encontró el link, muestra el texto normal
                         return `<td>${text}</td>`;
                     }).join('')}</tr>`
                 ).join('');
@@ -106,24 +131,27 @@
 
         async function saveRecordOp() {
             const rowData = currentHeaders.map((_, i) => document.getElementById(`inputOp_${i}`).value);
+            
+            if(rowData.includes("")) {
+                alert("Todos los campos son obligatorios. Seleccione de la lista o ingrese el dato.");
+                return;
+            }
+
             await apiCall({ action: 'insert', sheet: currentSheet, row: rowData });
+            
+            // Sincronizar de nuevo si se añadió un Acta
+            if(currentSheet === 'Actas') {
+                const actasRes = await apiCall({ action: 'getData', sheet: 'Actas', filterCol: 1, filterVal: userCoddane });
+                if(actasRes.success) globalData.actas = actasRes.data;
+            }
             loadSheet(currentSheet, 1);
         }
 
-        // --- FUNCIÓN DE BÚSQUEDA AGREGADA ---
         function filterTable(inputId, tableId) {
             const input = document.getElementById(inputId).value.toLowerCase();
-            const table = document.getElementById(tableId);
-            const tbody = table.querySelector("tbody");
-            const rows = tbody.getElementsByTagName("tr");
-
+            const rows = document.getElementById(tableId).querySelector("tbody").getElementsByTagName("tr");
             for (let i = 0; i < rows.length; i++) {
-                let rowText = rows[i].innerText.toLowerCase();
-                if (rowText.includes(input)) {
-                    rows[i].style.display = "";
-                } else {
-                    rows[i].style.display = "none";
-                }
+                rows[i].style.display = rows[i].innerText.toLowerCase().includes(input) ? "" : "none";
             }
         }
     </script>
