@@ -109,6 +109,23 @@
             await apiCall({ action: 'insert', sheet: currentSheet, row: rowData });
             loadSheet(currentSheet, 1);
         }
+
+        // --- FUNCIÓN DE BÚSQUEDA AGREGADA ---
+        function filterTable(inputId, tableId) {
+            const input = document.getElementById(inputId).value.toLowerCase();
+            const table = document.getElementById(tableId);
+            const tbody = table.querySelector("tbody");
+            const rows = tbody.getElementsByTagName("tr");
+
+            for (let i = 0; i < rows.length; i++) {
+                let rowText = rows[i].innerText.toLowerCase();
+                if (rowText.includes(input)) {
+                    rows[i].style.display = "";
+                } else {
+                    rows[i].style.display = "none";
+                }
+            }
+        }
     </script>
 </body>
 </html>
