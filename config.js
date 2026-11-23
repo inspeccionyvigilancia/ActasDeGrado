@@ -1,7 +1,7 @@
 // config.js
 const CONFIG = {
     // REEMPLAZA ESTA URL con la de tu despliegue de Apps Script
-    API_URL: "https://script.google.com/macros/s/AKfycbz9p8qH5OrFVrLY834SwJxkBCkHbQNWGaLL72JA21d_-Gu5AnF6nxMB6ZbQHxKdkwri/exec", 
+    API_URL: "https://script.google.com/macros/s/AKfycbzXO2W8IxMbp0RliUB87SdVUL6LKBK7v4NkaLjHKWyIKe-LsWSLZMBtfyNNwdlg3lOYDw/exec", 
     COLORS: {
         primary: "#094062", 
         secondary: "#05b700", 
