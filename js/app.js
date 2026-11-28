@@ -100,22 +100,7 @@ function renderSearchFilters() {
   if ((activeTab === "Actas Individuales" || activeTab === "Actas Generales") && isAdmin) {
     const municipios = (appData["Municipio"]?.records || []).map(r => r.MUNICIPIO).filter(Boolean);
     container.innerHTML = `
-      <div class="form-group" style="margin:0;">
-        <label>Municipio</label>
-        <select id="filterMunicipio" class="form-control">
-          <option value="">Todos los municipios</option>
-          ${municipios.map(m => `<option value="${m}">${m}</option>`).join("")}
-        </select>
-      </div>
-      <div class="form-group" style="margin:0;">
-        <label>Código DANE / Institución</label>
-        <input type="text" id="filterDane" class="form-control" placeholder="Ej: 17001 o UNO">
-      </div>
-      <div class="form-group" style="margin:0;">
-        <button type="button" class="btn btn-primary" style="width:100%;" onclick="ejecutarConsulta()">
-          🔍 Consultar Registros
-        </button>
-      </div>
+      
     `;
   } else {
     container.innerHTML = `
