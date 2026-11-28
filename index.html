@@ -1,57 +1,89 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Login - Gestión de Actas</title>
-    <script src="config.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="./icono.png">
+  <title>SIAG - Secretaría de Educación de Caldas</title>
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div id="header-container"></div>
-    
-    <div class="container" style="max-width: 400px; margin-top: 50px;">
-        <div class="card" style="text-align: center;">
-            <h3 style="color: #094062;">Inicio de Sesión</h3>
-            <form id="loginForm">
-                <input type="text" id="username" placeholder="Usuario (Nombre o CODDANE)" required style="width: 90%;"><br>
-                <input type="password" id="password" placeholder="Contraseña" required style="width: 90%;"><br>
-                <button type="submit" class="btn-green" style="width: 95%; margin-top: 15px;">INGRESAR</button>
-            </form>
-            <p id="errorMsg" style="color: red; display: none;"></p>
+
+  <header class="inst-header">
+    <div class="inst-brand">
+      <img src="./logo.png" alt="Logo Secretaría de Educación de Caldas">
+      <div class="inst-titles">
+        <h1>SECRETARIA DE EDUCACIÓN DE CALDAS</h1>
+        <h2>GESTIÓN DE ACTAS DE GRADO</h2>
+      </div>
+    </div>
+  </header>
+
+  <main class="login-wrapper">
+    <div class="login-card" id="loginBox">
+      <h3>Iniciar Sesión - SIAG</h3>
+      <div id="alertBox" class="alert hidden"></div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="usuario">Usuario (Nombre o Código DANE)</label>
+          <input type="text" id="usuario" class="form-control" placeholder="Ej: ADMIN o 17001" required>
         </div>
+        <div class="form-group">
+          <label for="clave">Contraseña</label>
+          <input type="password" id="clave" class="form-control" placeholder="Ingrese su clave" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          Ingresar al Sistema
+        </button>
+      </form>
+
+      <button type="button" class="link-btn" id="btnShowReset">
+        ¿Olvidó su contraseña? Restablecer vía correo electrónico
+      </button>
     </div>
 
-   <script>
-        document.head.insertAdjacentHTML('beforeend', UI.getStyles());
-        document.getElementById('header-container').innerHTML = UI.getHeader();
+    <div class="login-card hidden" id="resetBox">
+      <h3>Restablecer Contraseña</h3>
+      <div id="resetAlert" class="alert hidden"></div>
 
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button');
-            btn.innerText = "Verificando...";
-            document.getElementById('errorMsg').style.display = 'none';
-            
-            try {
-                const res = await apiCall({
-                    action: 'login',
-                    user: document.getElementById('username').value,
-                    pass: document.getElementById('password').value
-                });
+      <form id="requestCodeForm">
+        <div class="form-group">
+          <label for="resetQuery">Usuario o Correo Electrónico Registrado</label>
+          <input type="text" id="resetQuery" class="form-control" placeholder="Ej: ADMIN o correo@sedcaldas.edu.co" required>
+        </div>
+        <button type="submit" class="btn btn-warning" style="width: 100%;">
+          Enviar Código de Verificación
+        </button>
+      </form>
 
-                if (res.success) {
-                    localStorage.setItem('user', res.user);
-                    localStorage.setItem('role', res.role);
-                    window.location.href = res.role === 'ADMINISTRADOR' ? 'admin.html' : 'operador.html';
-                } else {
-                    document.getElementById('errorMsg').innerText = res.message;
-                    document.getElementById('errorMsg').style.display = 'block';
-                    btn.innerText = "INGRESAR";
-                }
-            } catch (error) {
-                document.getElementById('errorMsg').innerText = "Error de conexión con el servidor. Revisa tu URL de Apps Script.";
-                document.getElementById('errorMsg').style.display = 'block';
-                btn.innerText = "INGRESAR";
-            }
-        });
-    </script>
+      <form id="confirmResetForm" class="hidden" style="margin-top: 16px;">
+        <input type="hidden" id="resetTargetUser">
+        <div class="form-group">
+          <label for="resetToken">Código de 6 dígitos enviado a su correo</label>
+          <input type="text" id="resetToken" class="form-control" maxlength="6" required>
+        </div>
+        <div class="form-group">
+          <label for="newPassword">Nueva Contraseña</label>
+          <input type="password" id="newPassword" class="form-control" minlength="5" required>
+        </div>
+        <button type="submit" class="btn btn-success" style="width: 100%;">
+          Guardar Nueva Contraseña
+        </button>
+      </form>
+
+      <button type="button" class="link-btn" id="btnBackLogin">
+        ← Volver al inicio de sesión
+      </button>
+    </div>
+  </main>
+
+  <div class="loader-overlay" id="loader">
+    <div class="spinner"></div>
+    <span>Procesando solicitud...</span>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
 </body>
 </html>
