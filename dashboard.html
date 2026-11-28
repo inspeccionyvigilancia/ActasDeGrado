@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="./icono.png">
+  <title>Panel SIAG - Secretaría de Educación de Caldas</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <header class="inst-header">
+    <div class="inst-brand">
+      <img src="./logo.png" alt="Logo Secretaría de Educación de Caldas">
+      <div class="inst-titles">
+        <h1>SECRETARIA DE EDUCACIÓN DE CALDAS</h1>
+        <h2>GESTIÓN DE ACTAS DE GRADO</h2>
+      </div>
+    </div>
+
+    <div class="user-controls">
+      <span class="badge-rol" id="userBadge">Cargando...</span>
+      <button class="btn btn-danger btn-sm" id="btnLogout">Cerrar Sesión</button>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <div class="tabs-bar" id="tabsBar">
+      <button class="tab-btn active" data-tab="Actas Individuales">Actas Individuales</button>
+      <button class="tab-btn" data-tab="Actas Generales">Actas Generales</button>
+    </div>
+
+    <section class="toolbar-card">
+      <p id="systemStatus" style="color: #094062; font-weight: bold; margin-bottom: 10px;">⏳ Cargando datos de validación del sistema...</p>
+
+      <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Buscar en la tabla actual..." onkeyup="filterTable('searchInput', 'dataTable')">
+
+      <div class="search-grid" id="searchFilters"></div>
+
+      <div class="actions-row">
+        <div id="roleActionButtons" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+        <div>
+          <span id="recordCounter" style="font-weight: 700; color: var(--color-azul); font-size: 0.9rem;">Sin consulta ejecutada</span>
+        </div>
+      </div>
+    </section>
+
+    <div id="emptyStateBox" class="toolbar-card" style="border-left-color: var(--color-amarillo); text-align: center;">
+      <p style="font-weight: 600; color: var(--color-azul);">
+        Haga clic en <strong>Consultar Registros</strong> para visualizar los registros en pantalla.
+      </p>
+    </div>
+
+    <div class="table-responsive hidden" id="tableWrapper">
+      <table id="dataTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- MODAL AGREGAR / EDITAR REGISTRO (TODOS LOS CAMPOS OBLIGATORIOS) -->
+  <div class="modal-backdrop" id="crudModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="crudModalTitle">Gestionar Registro</h3>
+        <button class="btn btn-sm btn-danger" onclick="closeModal('crudModal')">X</button>
+      </div>
+      <form id="crudForm">
+        <div id="crudFields"></div>
+
+        <div id="crudPdfSection" class="pdf-box hidden">
+          <label for="crudPdfFile">Documento Soporte (.PDF) *</label>
+          <input type="file" id="crudPdfFile" class="form-control" accept="application/pdf,.pdf">
+          <small style="color: var(--color-azul); display: block; margin-top: 6px;">
+            Se guardará automáticamente en SIAG/Individuales o SIAG/Generales según la pestaña activa.
+          </small>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
+          <button type="button" class="btn btn-warning" onclick="closeModal('crudModal')">Cancelar</button>
+          <button type="submit" class="btn btn-success">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="loader-overlay" id="loader">
+    <div class="spinner"></div>
+    <span>Sincronizando con Google Drive y Sheets...</span>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
